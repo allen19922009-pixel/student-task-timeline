@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Planning Calendar | 学生日程规划</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="mode-screen" id="modeScreen">
+        <div class="brand-block">
+          <span class="eyebrow">Student Planner · 中英文可打印</span>
+          <h1>学生月度安排日历</h1>
+          <p>选择规划类型后，编辑不同学生每一天要完成的事项，并自动生成清晰的月度时间轴。</p>
+        </div>
+        <div class="mode-grid">
+          <button class="mode-card daily" data-mode="daily" type="button">
+            <span class="mode-mark">A</span>
+            <strong>学生日常安排</strong>
+            <small>Daily Student Schedule</small>
+            <p>适合每月活动、课外项目、阅读、考试、面谈、作品集和细致执行安排。</p>
+          </button>
+          <button class="mode-card apply" data-mode="application" type="button">
+            <span class="mode-mark">B</span>
+            <strong>申请季安排</strong>
+            <small>Application Season Plan</small>
+            <p>适合文书、推荐信、材料递交、网申、面试、截止日期和院校清单管理。</p>
+          </button>
+        </div>
+      </section>
+
+      <section class="planner hidden" id="planner">
+        <header class="topbar">
+          <div>
+            <button class="ghost-button" id="backToModes" type="button">← 类型</button>
+            <p class="eyebrow" id="modeLabel">Daily Student Schedule</p>
+            <h2 id="plannerTitle">学生日常安排</h2>
+          </div>
+          <div class="toolbar no-print">
+            <button class="ghost-button" id="prevTopMonth" type="button">上个月 Previous</button>
+            <label>
+              <span>月份 Month</span>
+              <input id="monthPicker" type="month" />
+            </label>
+            <button class="primary-button" id="nextTopMonth" type="button">下个月 Next Month</button>
+            <button class="primary-button" id="addStudent" type="button">+ 学生</button>
+            <button class="ghost-button" id="renameStudent" type="button">改名 Rename</button>
+            <button class="danger-button" id="deleteStudent" type="button">删除学生</button>
+            <button class="print-button" id="printPage" type="button">打印 Print</button>
+          </div>
+        </header>
+
+        <section class="student-strip no-print" id="studentStrip"></section>
+
+        <section class="workspace">
+          <aside class="editor-panel no-print">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Edit Task</span>
+                <h3>添加 / 编辑事项</h3>
+              </div>
+              <button id="clearForm" type="button" title="清空表单">×</button>
+            </div>
+            <form id="taskForm">
+              <input type="hidden" id="taskId" />
+              <label>
+                <span>学生 Student</span>
+                <select id="studentSelect"></select>
+              </label>
+              <label>
+                <span>开始日期 Start Date</span>
+                <input id="taskDate" type="date" required />
+              </label>
+              <label>
+                <span>结束日期 End Date</span>
+                <input id="taskEndDate" type="date" required />
+              </label>
+              <label>
+                <span>中文事项 Chinese Task</span>
+                <input id="taskZh" type="text" placeholder="例：完成暑期项目调研" required />
+              </label>
+              <label>
+                <span>English Task</span>
+                <input id="taskEn" type="text" placeholder="Research summer programs" />
+              </label>
+              <label>
+                <span>类别 Category</span>
+                <select id="taskCategory"></select>
+              </label>
+              <section class="category-editor">
+                <div class="category-editor-head">
+                  <span>类别表格 Category Table</span>
+                  <button id="addCategory" type="button">+ 类别</button>
+                </div>
+                <div class="category-table" id="categoryTable"></div>
+              </section>
+              <label>
+                <span>颜色 Color</span>
+                <input id="taskColor" type="color" value="#246bfe" />
+              </label>
+              <label>
+                <span>备注 Notes</span>
+                <textarea id="taskNotes" rows="4" placeholder="材料链接、负责人、进度说明等"></textarea>
+              </label>
+              <button class="primary-button wide" type="submit">保存事项 Save</button>
+              <button class="ghost-button wide" id="saveAsNewTask" type="button">另存为新事项 Save as New</button>
+              <button class="danger-button wide" id="deleteTask" type="button">删除当前事项</button>
+            </form>
+          </aside>
+
+          <section class="calendar-zone">
+            <div class="print-header">
+              <div>
+                <p class="eyebrow" id="printMode">Daily Student Schedule</p>
+                <h2 id="monthTitle">2026年6月 · June 2026</h2>
+              </div>
+              <div class="legend" id="legend"></div>
+            </div>
+            <div class="calendar-card">
+              <div class="weekday-row">
+                <span>Sun 日</span>
+                <span>Mon 一</span>
+                <span>Tue 二</span>
+                <span>Wed 三</span>
+                <span>Thu 四</span>
+                <span>Fri 五</span>
+                <span>Sat 六</span>
+              </div>
+              <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+            <div class="calendar-nav bottom-nav no-print">
+              <button class="ghost-button" id="prevCalendarMonth" type="button">上个月 Previous</button>
+              <button class="primary-button" id="nextCalendarMonth" type="button">下个月 Next Month</button>
+            </div>
+          </section>
+
+          <section class="gantt-section">
+            <div class="panel-heading gantt-heading">
+              <div>
+                <h3 id="ganttTitle">张子瑶</h3>
+              </div>
+              <div class="legend gantt-legend" id="ganttLegend"></div>
+            </div>
+            <div class="gantt-board" id="ganttBoard"></div>
+            <div class="gantt-nav bottom-nav no-print">
+              <button class="ghost-button" id="prevMonth" type="button">Previous Month</button>
+              <span id="rangeHint">1-year timeline</span>
+              <button class="primary-button" id="nextMonth" type="button">Next Month</button>
+            </div>
+          </section>
+
+          <aside class="timeline-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Auto Timeline</span>
+                <h3>自动时间轴</h3>
+              </div>
+            </div>
+            <div class="timeline" id="timeline"></div>
+          </aside>
+        </section>
+      </section>
+    </main>
+    <script src="./seed.js"></script>
+    <script src="./app.js"></script></body>
+</html>
