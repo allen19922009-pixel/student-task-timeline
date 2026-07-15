@@ -164,6 +164,7 @@ function loadMode(mode) {
   }
   els.modeScreen.classList.add("hidden");
   els.planner.classList.remove("hidden");
+  document.querySelector("#openDdl").classList.toggle("hidden", mode !== "application");
   render();
 }
 
@@ -1186,6 +1187,166 @@ window.addEventListener("afterprint", () => {
 function sanitizeFilenamePart(value) {
   return value.replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, " ").trim();
 }
+
+// ---- 批量申请 DDL ----
+const ddlRounds = [
+  { id: "common-ed1", zh: "Common ED1", en: "Common App ED1", month: 11, day: 1, lead: 10, note: "" },
+  { id: "common-ed2", zh: "Common ED2", en: "Common App ED2", month: 1, day: 1, lead: 10, note: "" },
+  { id: "common-ea", zh: "Common EA", en: "Common App EA", month: 11, day: 1, lead: 10, note: "大部分学校" },
+  { id: "common-rd", zh: "Common RD", en: "Common App RD", month: 1, day: 1, lead: 10, note: "大部分学校" },
+  { id: "ucas-early", zh: "UCAS 牛剑/医学", en: "UCAS Oxbridge / Medicine", month: 10, day: 15, lead: 10, note: "" },
+  { id: "ucas-main", zh: "UCAS 常规", en: "UCAS Main Deadline", month: 1, day: 31, lead: 10, note: "大部分专业" },
+  { id: "uc", zh: "UC 加州系统", en: "UC System", month: 11, day: 30, lead: 10, note: "" },
+  { id: "hk", zh: "香港高校首轮", en: "Hong Kong Round 1", month: 11, day: 15, lead: 5, note: "以学校为准" },
+  { id: "canada", zh: "加拿大高校", en: "Canada Universities", month: 1, day: 15, lead: 3, note: "以学校为准" },
+];
+
+const ddlEls = {
+  openButton: document.querySelector("#openDdl"),
+  overlay: document.querySelector("#ddlOverlay"),
+  student: document.querySelector("#ddlStudent"),
+  table: document.querySelector("#ddlTable"),
+  generate: document.querySelector("#generateDdl"),
+  close: document.querySelector("#closeDdl"),
+};
+
+function ddlPrefsKey() {
+  return "student-calendar-ddl-prefs";
+}
+
+function loadDdlPrefs() {
+  try {
+    return JSON.parse(localStorage.getItem(ddlPrefsKey())) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveDdlPrefs(prefs) {
+  localStorage.setItem(ddlPrefsKey(), JSON.stringify(prefs));
+}
+
+function nextOccurrence(month, day) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const candidate = new Date(now.getFullYear(), month - 1, day);
+  return toDateKey(candidate < today ? new Date(now.getFullYear() + 1, month - 1, day) : candidate);
+}
+
+function openDdlModal() {
+  const prefs = loadDdlPrefs();
+  ddlEls.student.innerHTML = state.students
+    .map((student) => `<option value="${student.id}" ${student.id === state.activeStudentId ? "selected" : ""}>${student.name}</option>`)
+    .join("");
+  ddlEls.table.innerHTML = `
+    <div class="ddl-row ddl-head">
+      <span></span>
+      <span>系统 / 轮次 System</span>
+      <span>截止日期 Deadline</span>
+      <span>提前递交 Submit</span>
+    </div>
+    ${ddlRounds
+      .map((round) => {
+        const pref = prefs[round.id] || {};
+        const date = pref.date || nextOccurrence(round.month, round.day);
+        const lead = Number.isFinite(pref.lead) ? pref.lead : round.lead;
+        const checked = pref.checked ? "checked" : "";
+        return `
+          <div class="ddl-row" data-round="${round.id}">
+            <input type="checkbox" data-field="checked" ${checked} aria-label="选择 ${round.zh}" />
+            <div class="ddl-name">
+              <strong>${round.zh}</strong>
+              <small>${round.en}${round.note ? ` · ${round.note}` : ""}</small>
+            </div>
+            <input type="date" data-field="date" value="${date}" />
+            <div class="ddl-lead">
+              <input type="number" data-field="lead" min="0" max="60" value="${lead}" />
+              <span>天前</span>
+            </div>
+          </div>
+        `;
+      })
+      .join("")}
+  `;
+  ddlEls.overlay.classList.remove("hidden");
+}
+
+function closeDdlModal() {
+  ddlEls.overlay.classList.add("hidden");
+}
+
+function generateDdlTasks() {
+  const studentId = ddlEls.student.value;
+  if (!studentId) return;
+  const prefs = loadDdlPrefs();
+  if (!state.categories.some(([id]) => id === "submit")) {
+    state.categories.push(["submit", "递交 Submit", "#f05d5e"]);
+  }
+  const color = getCategoryColor(state.mode, "submit");
+  let added = 0;
+  let skipped = 0;
+
+  ddlRounds.forEach((round) => {
+    const row = ddlEls.table.querySelector(`[data-round="${round.id}"]`);
+    if (!row) return;
+    const checked = row.querySelector('[data-field="checked"]').checked;
+    const date = row.querySelector('[data-field="date"]').value;
+    const lead = Math.max(0, parseInt(row.querySelector('[data-field="lead"]').value, 10) || 0);
+    prefs[round.id] = { checked, date, lead };
+    if (!checked || !date) return;
+
+    const submitDate = toDateKey(addDays(new Date(`${date}T00:00:00`), -lead));
+    const entries = [
+      {
+        date: submitDate,
+        zh: `${round.zh}递交`,
+        notes: `提前${lead}天递交${round.note ? ` · ${round.note}` : ""}`,
+      },
+      {
+        date,
+        zh: `${round.zh}截止`,
+        notes: round.note,
+      },
+    ];
+    entries.forEach((entry) => {
+      const duplicate = state.tasks.some(
+        (task) => task.studentId === studentId && task.zh === entry.zh && task.date === entry.date,
+      );
+      if (duplicate) {
+        skipped += 1;
+        return;
+      }
+      state.tasks.push({
+        id: crypto.randomUUID(),
+        studentId,
+        date: entry.date,
+        endDate: entry.date,
+        zh: entry.zh,
+        en: "",
+        category: "submit",
+        color,
+        notes: entry.notes,
+      });
+      added += 1;
+    });
+  });
+
+  saveDdlPrefs(prefs);
+  if (added) {
+    state.activeStudentId = studentId;
+    save();
+    render();
+  }
+  closeDdlModal();
+  alert(`已添加 ${added} 条 DDL${skipped ? `，跳过 ${skipped} 条重复项` : ""}`);
+}
+
+ddlEls.openButton.addEventListener("click", openDdlModal);
+ddlEls.close.addEventListener("click", closeDdlModal);
+ddlEls.generate.addEventListener("click", generateDdlTasks);
+ddlEls.overlay.addEventListener("click", (event) => {
+  if (event.target === ddlEls.overlay) closeDdlModal();
+});
 
 loadMode("daily");
 els.planner.classList.add("hidden");

@@ -51,6 +51,7 @@
             </label>
             <button class="primary-button" id="nextTopMonth" type="button">下个月 Next Month</button>
             <button class="primary-button" id="addStudent" type="button">+ 学生</button>
+            <button class="primary-button" id="openDdl" type="button">+ 申请DDL</button>
             <button class="ghost-button" id="renameStudent" type="button">改名 Rename</button>
             <button class="danger-button" id="deleteStudent" type="button">删除学生</button>
             <button class="print-button" id="printPage" type="button">打印 Print</button>
@@ -168,6 +169,27 @@
         </section>
       </section>
     </main>
+    <div class="ddl-overlay hidden no-print" id="ddlOverlay">
+      <section class="ddl-modal">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">Application Deadlines</span>
+            <h3>批量添加申请 DDL</h3>
+          </div>
+          <button id="closeDdl" type="button" title="关闭">×</button>
+        </div>
+        <label>
+          <span>学生 Student</span>
+          <select id="ddlStudent"></select>
+        </label>
+        <p class="ddl-hint">
+          勾选申请系统后一键生成「递交」和「截止」两条 DDL：递交日期 = 截止日期 − 提前天数。
+          日期与提前天数都可修改，修改会自动记住，下个学生直接复用。
+        </p>
+        <div class="ddl-table" id="ddlTable"></div>
+        <button class="primary-button wide" id="generateDdl" type="button">生成 DDL Generate</button>
+      </section>
+    </div>
     <script src="./seed.js"></script>
     <script src="./app.js"></script></body>
 </html>
