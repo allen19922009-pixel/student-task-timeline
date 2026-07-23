@@ -706,7 +706,12 @@ form {
 }
 
 .gantt-legend {
-  max-width: 68%;
+  /* 固定 3 列往下排，类别多时向下增行，不再横向拉出大片空白 */
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  justify-content: end;
+  column-gap: 16px;
+  row-gap: 8px;
 }
 
 .calendar-card {
@@ -1090,6 +1095,9 @@ form {
   }
 
   .gantt-legend {
+    /* 打印仍用横排换行，避免占用纵向空间挤压时间轴 */
+    display: flex;
+    flex-wrap: wrap;
     max-width: 190mm;
     gap: 2.2mm 3.2mm;
     justify-content: flex-end;
