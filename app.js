@@ -606,7 +606,7 @@ function renderGanttTimeline() {
       <strong>${currentStudentDisplayName()}</strong>
       <span>${config.en} · ${rangeLabel} · ${formatMonthLabel(rangeStartDate)} - ${formatMonthLabel(rangeEndDate)}</span>
     </div>
-    <div class="gantt-scale" style="grid-template-columns: repeat(${daysInRange}, var(--day-width));">
+    <div class="gantt-scale" style="grid-template-columns: repeat(${daysInRange}, minmax(var(--day-width), 1fr));">
       ${renderGanttScale(rangeStartDate, daysInRange)}
     </div>
   `;

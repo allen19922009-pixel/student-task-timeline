@@ -331,7 +331,9 @@ textarea {
 .gantt-student-row,
 .gantt-task-row {
   display: grid;
-  grid-template-columns: 260px max-content;
+  grid-template-columns: 260px minmax(max-content, 1fr);
+  width: max-content;
+  min-width: 100%;
 }
 
 .gantt-date-header {
@@ -501,7 +503,7 @@ textarea {
 .gantt-chart {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(var(--days), var(--day-width));
+  grid-template-columns: repeat(var(--days), minmax(var(--day-width), 1fr));
   min-height: 62px;
   background: #f9fbfd;
   cursor: crosshair;
