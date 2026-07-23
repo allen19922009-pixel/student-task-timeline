@@ -701,7 +701,8 @@ function renderGanttScale(startDate, totalDays) {
     const date = addDays(startDate, index);
     const isStartEdge = index === 0;
     const isEndEdge = index === totalDays - 1 && endMonthKey !== startMonthKey;
-    const showMonthLabel = isStartEdge || isEndEdge || date.getDate() === 1;
+    // 末尾月份必有月初标签，尾部再标一次会看起来像后面还有一个月，不再重复显示
+    const showMonthLabel = isStartEdge || date.getDate() === 1;
     const weekend = date.getDay() === 0 || date.getDay() === 6 ? " weekend" : "";
     const monthStart = date.getDate() === 1 ? " month-start" : "";
     const edgeClass = isStartEdge ? " edge-start" : isEndEdge ? " edge-end" : "";
