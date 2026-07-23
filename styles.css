@@ -1111,7 +1111,8 @@ form {
   }
 
   .gantt-board {
-    --day-width: minmax(0, 1fr);
+    /* 0px 宽下限：日列全部按 1fr 均分铺满页宽（列模板是 minmax(var(--day-width), 1fr)） */
+    --day-width: 0px;
     width: 100%;
     overflow: visible;
     border: 1px solid #d8e0ea;
@@ -1127,6 +1128,7 @@ form {
   .gantt-student-row,
   .gantt-task-row {
     grid-template-columns: 52mm minmax(0, 1fr);
+    width: 100%;
     min-width: 0;
   }
 
