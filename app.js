@@ -164,7 +164,9 @@ function loadMode(mode) {
   }
   els.modeScreen.classList.add("hidden");
   els.planner.classList.remove("hidden");
-  document.querySelector("#openDdl").classList.toggle("hidden", mode !== "application");
+  ["#openDdl", "#quickSat", "#quickUc", "#quickSubmit"].forEach((id) => {
+    document.querySelector(id).classList.toggle("hidden", mode !== "application");
+  });
   render();
 }
 
@@ -1340,6 +1342,106 @@ function generateDdlTasks() {
   closeDdlModal();
   alert(`已添加 ${added} 条 DDL${skipped ? `，跳过 ${skipped} 条重复项` : ""}`);
 }
+
+// ---- SAT / UC 快捷日期 ----
+const quickSystems = {
+  sat: {
+    zh: "SAT",
+    submitZh: "SAT 报名递交",
+    submitEn: "SAT Registration Submit",
+    open: { zh: "SAT 报名开放", en: "SAT Registration Opens", month: 6, day: 1, category: "application-form", notes: "College Board 年度报名开放（以官方公布为准）" },
+    deadline: { zh: "SAT 报名截止", en: "SAT Registration Deadline", month: 9, day: 18, category: "submit", notes: "秋季（10月）考试报名截止（以官方公布为准）" },
+  },
+  uc: {
+    zh: "UC",
+    submitZh: "UC 递交",
+    submitEn: "UC Application Submit",
+    open: { zh: "UC 系统开放填写", en: "UC Application Opens", month: 8, day: 1, category: "application-form", notes: "8月1日开放填写 · 10月1日起可递交" },
+    deadline: { zh: "UC 申请截止", en: "UC Application Deadline", month: 11, day: 30, category: "submit", notes: "11月30日截止" },
+  },
+};
+
+const QUICK_SUBMIT_LEAD = 10;
+
+function quickDeadlineDate(system) {
+  return nextOccurrence(system.deadline.month, system.deadline.day);
+}
+
+function quickOpenDate(system) {
+  const deadline = new Date(`${quickDeadlineDate(system)}T00:00:00`);
+  let open = new Date(deadline.getFullYear(), system.open.month - 1, system.open.day);
+  if (open > deadline) {
+    open = new Date(deadline.getFullYear() - 1, system.open.month - 1, system.open.day);
+  }
+  return toDateKey(open);
+}
+
+function ensureCategoryExists(id, label, color) {
+  if (!state.categories.some(([catId]) => catId === id)) {
+    state.categories.push([id, label, color]);
+  }
+}
+
+function addQuickTasks(entries) {
+  const studentId = state.activeStudentId;
+  if (!studentId) return;
+  ensureCategoryExists("application-form", "申请表格 Application Form", "#246bfe");
+  ensureCategoryExists("submit", "递交 Submit", "#f05d5e");
+  let added = 0;
+  let skipped = 0;
+  entries.forEach((entry) => {
+    const duplicate = state.tasks.some(
+      (task) => task.studentId === studentId && task.zh === entry.zh && task.date === entry.date,
+    );
+    if (duplicate) {
+      skipped += 1;
+      return;
+    }
+    state.tasks.push({
+      id: crypto.randomUUID(),
+      studentId,
+      date: entry.date,
+      endDate: entry.date,
+      zh: entry.zh,
+      en: entry.en || "",
+      category: entry.category,
+      color: getCategoryColor(state.mode, entry.category),
+      notes: entry.notes || "",
+    });
+    added += 1;
+  });
+  if (added) {
+    save();
+    render();
+  }
+  const student = state.students.find((item) => item.id === studentId);
+  alert(`已为 ${student ? student.name : "当前学生"} 添加 ${added} 条日期${skipped ? `，跳过 ${skipped} 条重复项` : ""}`);
+}
+
+function quickSystemEntries(key) {
+  const system = quickSystems[key];
+  return [
+    { ...system.open, date: quickOpenDate(system) },
+    { ...system.deadline, date: quickDeadlineDate(system) },
+  ];
+}
+
+function quickSubmitEntries() {
+  return Object.values(quickSystems).map((system) => {
+    const deadline = quickDeadlineDate(system);
+    return {
+      zh: system.submitZh,
+      en: system.submitEn,
+      date: toDateKey(addDays(new Date(`${deadline}T00:00:00`), -QUICK_SUBMIT_LEAD)),
+      category: "submit",
+      notes: `默认提前${QUICK_SUBMIT_LEAD}天递交（截止 ${deadline}）`,
+    };
+  });
+}
+
+document.querySelector("#quickSat").addEventListener("click", () => addQuickTasks(quickSystemEntries("sat")));
+document.querySelector("#quickUc").addEventListener("click", () => addQuickTasks(quickSystemEntries("uc")));
+document.querySelector("#quickSubmit").addEventListener("click", () => addQuickTasks(quickSubmitEntries()));
 
 ddlEls.openButton.addEventListener("click", openDdlModal);
 ddlEls.close.addEventListener("click", closeDdlModal);
