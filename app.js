@@ -120,7 +120,6 @@ const els = {
   categoryTable: document.querySelector("#categoryTable"),
   addCategory: document.querySelector("#addCategory"),
   calendarGrid: document.querySelector("#calendarGrid"),
-  timeline: document.querySelector("#timeline"),
   ganttBoard: document.querySelector("#ganttBoard"),
   rangeHint: document.querySelector("#rangeHint"),
   legend: document.querySelector("#legend"),
@@ -283,7 +282,6 @@ function render() {
   renderCategories();
   renderLegend();
   renderCalendar();
-  renderTimeline();
   renderGanttTimeline();
   updateDeleteButton();
   updateDeleteStudentButton();
@@ -547,34 +545,6 @@ function taskButton(task) {
     editTask(task.id);
   });
   return button;
-}
-
-function renderTimeline() {
-  const items = state.tasks
-    .filter((task) => task.studentId === state.activeStudentId && taskTouchesMonth(task, state.month))
-    .sort((a, b) => a.date.localeCompare(b.date));
-  els.timeline.innerHTML = "";
-
-  if (!items.length) {
-    els.timeline.innerHTML = `<div class="empty-state">这个学生本月还没有事项。双击日历某一天，或用左侧表单添加安排。</div>`;
-    return;
-  }
-
-  items.forEach((task) => {
-    const [, categoryLabel, categoryColor] = getCategory(task.category);
-    const color = task.color || categoryColor;
-    const item = document.createElement("article");
-    item.className = "timeline-item";
-    item.style.setProperty("--task-color", color);
-    item.innerHTML = `
-      <time>${formatRange(task)} · ${categoryLabel}</time>
-      <strong>${task.zh}</strong>
-      <p>${task.en || ""}</p>
-      ${task.notes ? `<p>${task.notes}</p>` : ""}
-    `;
-    item.addEventListener("click", () => editTask(task.id));
-    els.timeline.append(item);
-  });
 }
 
 function renderGanttTimeline() {
@@ -872,15 +842,6 @@ function taskCoversDate(task, dateKey) {
   const start = task.date;
   const end = task.endDate || task.date;
   return dateKey >= start && dateKey <= end;
-}
-
-function taskTouchesMonth(task, monthKey) {
-  const monthStart = `${monthKey}-01`;
-  const [year, month] = monthKey.split("-").map(Number);
-  const monthEnd = toDateKey(new Date(year, month, 0));
-  const taskStart = task.date;
-  const taskEnd = task.endDate || task.date;
-  return taskStart <= monthEnd && taskEnd >= monthStart;
 }
 
 function taskTouchesRange(task, rangeStart, rangeEnd) {
